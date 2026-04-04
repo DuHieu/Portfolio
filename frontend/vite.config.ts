@@ -5,7 +5,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/', // Hoặc '/Portfolio/' nếu bạn deploy vào Project Page thay vì User Page
+  base: '/Portfolio/', // Đã cập nhật theo tên Repository của bạn
   plugins: [
     react(),
     tailwindcss(),
