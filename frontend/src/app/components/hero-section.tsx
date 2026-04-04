@@ -1,13 +1,36 @@
 import { motion, useMotionValue, useTransform } from 'motion/react';
-import { useEffect, useRef } from 'react';
-import { Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, Pencil } from 'lucide-react';
+import { useAuth } from '../context/auth-context';
 
-export function HeroSection() {
+interface DeveloperProfile {
+  username: string;
+  full_name: string;
+  bio: string;
+  avatar_url: string;
+  github_url: string;
+  linkedin_url: string;
+}
+
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+
+export function HeroSection({ username }: { username: string }) {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<DeveloperProfile | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
+  // Kiểm tra xem có phải chủ sở hữu profile không (đơn giản qua email prefix)
+  const isOwner = user?.email?.split('@')[0] === username;
+
   useEffect(() => {
+    // Gọi API lấy profile
+    fetch(`${API_BASE}/api/profile/${username}/`)
+      .then(res => res.json())
+      .then(data => setProfile(data))
+      .catch(err => console.error('Fetch profile error:', err));
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
@@ -17,7 +40,7 @@ export function HeroSection() {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
+  }, [mouseX, mouseY, username]);
 
   const rotateX = useTransform(mouseY, [-300, 300], [10, -10]);
   const rotateY = useTransform(mouseX, [-300, 300], [-10, 10]);
@@ -28,6 +51,17 @@ export function HeroSection() {
       ref={containerRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
+      {/* Nút Sửa nhanh (Chỉ hiện nếu là chủ sở hữu) */}
+      {isOwner && (
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          className="absolute top-32 right-10 z-50 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white/70 hover:text-white"
+          onClick={() => alert('Chức năng sửa Profile sẽ hiện Modal ở bước tiếp theo!')}
+        >
+          <Pencil className="w-5 h-5" />
+        </motion.button>
+      )}
+
       {/* Background particles */}
       <div className="absolute inset-0">
         {[...Array(30)].map((_, i) => (
@@ -90,8 +124,8 @@ export function HeroSection() {
           transition={{ duration: 1, delay: 0.2 }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
         >
-          <h1 className="text-[15rem] font-extrabold tracking-tighter text-white select-none">
-            ALEX
+          <h1 className="text-[12rem] md:text-[15rem] font-extrabold tracking-tighter text-white select-none uppercase">
+            {profile?.username || username}
           </h1>
         </motion.div>
 
@@ -119,11 +153,19 @@ export function HeroSection() {
                 ease: 'linear',
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#00D9FF]/30 to-[#A855F7]/30 backdrop-blur-xl border border-white/30 rounded-3xl transform rotate-12" />
-              <div className="absolute inset-0 bg-gradient-to-tl from-[#A855F7]/20 to-[#00D9FF]/20 backdrop-blur-xl border border-white/20 rounded-3xl transform -rotate-12" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="w-16 h-16 text-white" />
-              </div>
+              {profile?.avatar_url ? (
+                <div className="absolute inset-0 rounded-3xl overflow-hidden border-2 border-white/30">
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#00D9FF]/30 to-[#A855F7]/30 backdrop-blur-xl border border-white/30 rounded-3xl transform rotate-12" />
+                  <div className="absolute inset-0 bg-gradient-to-tl from-[#A855F7]/20 to-[#00D9FF]/20 backdrop-blur-xl border border-white/20 rounded-3xl transform -rotate-12" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles className="w-16 h-16 text-white" />
+                  </div>
+                </>
+              )}
             </motion.div>
             
             {/* Glow */}
@@ -138,13 +180,13 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="relative z-20"
         >
-          <h2 className="text-6xl md:text-7xl font-bold mb-4 tracking-tight">
+          <h2 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight">
             <span className="bg-gradient-to-r from-[#00D9FF] to-[#A855F7] bg-clip-text text-transparent">
-              Creative Developer
+              {profile?.full_name || 'Creative Developer'}
             </span>
           </h2>
           <p className="text-xl md:text-2xl text-white/60 tracking-wide max-w-2xl mx-auto">
-            Crafting immersive digital experiences that defy gravity
+            {profile?.bio || 'Crafting immersive digital experiences that defy gravity'}
           </p>
         </motion.div>
 

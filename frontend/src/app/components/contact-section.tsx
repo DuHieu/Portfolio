@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-export function ContactSection() {
+export function ContactSection({ username }: { username: string }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -65,7 +65,7 @@ export function ContactSection() {
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
-        {/* Section title */}
+        {/* Section title for ${username} */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -79,7 +79,7 @@ export function ContactSection() {
             </span>
           </h2>
           <p className="text-xl text-white/60 tracking-wide">
-            Let's create something extraordinary together
+            Let's create something extraordinary together with {username}
           </p>
         </motion.div>
 

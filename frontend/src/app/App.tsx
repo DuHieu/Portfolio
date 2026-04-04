@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FloatingNav } from './components/floating-nav';
 import { HeroSection } from './components/hero-section';
 import { ExperienceSection } from './components/experience-section';
@@ -7,8 +7,26 @@ import { ContactSection } from './components/contact-section';
 import { InteractiveParticles } from './components/interactive-particles';
 import { ParticleModeIndicator } from './components/particle-mode-indicator';
 
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+
 export default function App() {
+  const queryParams = new URLSearchParams(window.location.search);
+  const [activeUser, setActiveUser] = useState(queryParams.get('user') || 'dudev');
+
   useEffect(() => {
+    // Kiểm tra xem username có tồn tại không
+    if (activeUser !== 'dudev') {
+      fetch(`${API_BASE}/api/profile/${activeUser}/`)
+        .then(res => {
+          if (!res.ok) throw new Error('User not found');
+        })
+        .catch(() => {
+          // Nếu sai user, quay về mặc định
+          setActiveUser('dudev');
+          window.history.replaceState({}, '', window.location.pathname); 
+        });
+    }
+
     // Set dark mode and apply antigravity theme
     document.documentElement.classList.add('dark');
     document.body.style.fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -29,7 +47,7 @@ export default function App() {
         }
       });
     });
-  }, []);
+  }, [activeUser]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden">
@@ -51,10 +69,10 @@ export default function App() {
 
       {/* Main content */}
       <main className="relative z-10">
-        <HeroSection />
-        <ExperienceSection />
-        <ProjectGallery />
-        <ContactSection />
+        <HeroSection username={activeUser} />
+        <ExperienceSection username={activeUser} />
+        <ProjectGallery username={activeUser} />
+        <ContactSection username={activeUser} />
       </main>
 
       {/* Footer */}

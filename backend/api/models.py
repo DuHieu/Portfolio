@@ -1,6 +1,29 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class Developer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='developer_profile')
+    username = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    full_name = models.CharField(max_length=200, blank=True)
+    bio = models.TextField(blank=True)
+    avatar_url = models.URLField(blank=True, null=True)
+    github_url = models.URLField(blank=True, null=True)
+    linkedin_url = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.username and self.user.email:
+            # Tự động tạo username từ email (hieudu@gmail.com -> hieudu)
+            base_username = self.user.email.split('@')[0]
+            # Đảm bảo username là duy nhất
+            if Developer.objects.filter(username=base_username).exists():
+                base_username = f"{base_username}_{self.user.id}"
+            self.username = base_username
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.username or self.user.email
+
 class Project(models.Model):
     developer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects', null=True, blank=True)
     title = models.CharField(max_length=200)
@@ -50,3 +73,19 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f"Message to {self.receiver.username if self.receiver else 'General'} from {self.name}"
+
+# Signals to auto-create Developer profile
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=User)
+def create_user_developer_profile(sender, instance, created, **kwargs):
+    if created:
+        Developer.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_developer_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'developer_profile'):
+        instance.developer_profile.save()
+    else:
+        Developer.objects.create(user=instance)

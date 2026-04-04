@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Building2, Calendar } from 'lucide-react';
+import { Building2, Calendar, Pencil } from 'lucide-react';
+import { useAuth } from '../context/auth-context';
 
 interface Experience {
   id: number;
@@ -11,7 +12,6 @@ interface Experience {
   skills: string[];
   order: number;
 }
-
 const COLORS = [
   'from-[#00D9FF] to-[#0088CC]',
   'from-[#A855F7] to-[#7C3AED]',
@@ -21,27 +21,23 @@ const COLORS = [
 
 const LOGOS = ['🚀', '🎨', '💡', '✨', '🌟', '⚡'];
 
-const fallbackExperiences: Experience[] = [
-  { id: 1, title: 'Senior Frontend Developer', company: 'Tech Innovations Inc.', period: '2023 - Present', description: 'Leading frontend development with React and TypeScript.', skills: ['React', 'TypeScript', 'Tailwind'], order: 0 },
-  { id: 2, title: 'Full Stack Developer', company: 'Digital Creative Studio', period: '2021 - 2023', description: 'Built full-stack web applications.', skills: ['Next.js', 'Node.js', 'PostgreSQL'], order: 1 },
-  { id: 3, title: 'Web Developer', company: 'StartUp Ventures', period: '2019 - 2021', description: 'Developed web products from scratch.', skills: ['React', 'Django', 'Python'], order: 2 },
-];
-
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-export function ExperienceSection() {
-  const [experiences, setExperiences] = useState<Experience[]>(fallbackExperiences);
+export function ExperienceSection({ username }: { username: string }) {
+  const { user } = useAuth();
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const isOwner = user?.email?.split('@')[0] === username;
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/experiences/`)
+    fetch(`${API_BASE}/api/experiences/?user=${username}`)
       .then((res) => res.json())
       .then((data: Experience[]) => {
-        if (Array.isArray(data) && data.length > 0) setExperiences(data);
+        if (Array.isArray(data)) setExperiences(data);
       })
       .catch(() => {
-        // silently keep fallback data
+        // keep empty if fetch fails
       });
-  }, []);
+  }, [username]);
 
   return (
     <section id="experience" className="relative py-32 md:py-40 px-4 overflow-hidden">
@@ -128,6 +124,20 @@ export function ExperienceSection() {
                     {/* Glass card */}
                     <div className="relative backdrop-blur-xl bg-white/5 border border-white/20 rounded-3xl p-8 overflow-hidden">
                       <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+
+                      {/* Edit Button for Owners */}
+                      {isOwner && (
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          className="absolute top-4 right-4 z-20 p-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white/50 hover:text-white transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            alert(`Sửa kinh nghiệm: ${exp.title}`);
+                          }}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </motion.button>
+                      )}
 
                       <div className="relative z-10">
                         <div className="flex items-start gap-4 mb-6">

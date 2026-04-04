@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Pencil } from 'lucide-react';
+import { useAuth } from '../context/auth-context';
 
 interface Project {
   id: number;
@@ -11,86 +12,27 @@ interface Project {
   size: string;
   url: string | null;
   github_url: string | null;
+  developer_name?: string;
 }
-
-const fallbackProjects: Project[] = [
-  {
-    id: 1,
-    title: 'AI Dashboard Platform',
-    description: 'Advanced analytics dashboard with real-time data visualization',
-    tags: ['React', 'TypeScript', 'D3.js'],
-    gradient: 'from-[#00D9FF] to-[#0088CC]',
-    size: 'large',
-    url: null,
-    github_url: null,
-  },
-  {
-    id: 2,
-    title: 'E-Commerce System',
-    description: 'Full-stack shopping platform with payment integration',
-    tags: ['Next.js', 'Python', 'PostgreSQL'],
-    gradient: 'from-[#A855F7] to-[#7C3AED]',
-    size: 'medium',
-    url: null,
-    github_url: null,
-  },
-  {
-    id: 3,
-    title: '3D Portfolio Site',
-    description: 'Interactive portfolio with WebGL animations',
-    tags: ['Three.js', 'React', 'GSAP'],
-    gradient: 'from-[#00D9FF] to-[#A855F7]',
-    size: 'medium',
-    url: null,
-    github_url: null,
-  },
-  {
-    id: 4,
-    title: 'Social Media App',
-    description: 'Real-time chat and content sharing platform',
-    tags: ['React Native', 'Firebase', 'WebSocket'],
-    gradient: 'from-[#A855F7] to-[#00D9FF]',
-    size: 'large',
-    url: null,
-    github_url: null,
-  },
-  {
-    id: 5,
-    title: 'Task Manager Pro',
-    description: 'Collaborative project management tool',
-    tags: ['Vue.js', 'Express', 'MongoDB'],
-    gradient: 'from-[#0088CC] to-[#00D9FF]',
-    size: 'small',
-    url: null,
-    github_url: null,
-  },
-  {
-    id: 6,
-    title: 'Fitness Tracker',
-    description: 'Health and workout tracking mobile app',
-    tags: ['React Native', 'GraphQL'],
-    gradient: 'from-[#7C3AED] to-[#A855F7]',
-    size: 'small',
-    url: null,
-    github_url: null,
-  },
-];
+// ... (fallbackProjects remains same, skip for brevity in target)
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-export function ProjectGallery() {
-  const [projects, setProjects] = useState<Project[]>(fallbackProjects);
+export function ProjectGallery({ username }: { username: string }) {
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const isOwner = user?.email?.split('@')[0] === username;
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/projects/`)
+    fetch(`${API_BASE}/api/projects/?user=${username}`)
       .then((res) => res.json())
       .then((data: Project[]) => {
-        if (Array.isArray(data) && data.length > 0) setProjects(data);
+        if (Array.isArray(data)) setProjects(data);
       })
       .catch(() => {
-        // silently keep fallback data
+        // keep empty if fetch fails
       });
-  }, []);
+  }, [username]);
 
   return (
     <section id="projects" className="relative py-32 md:py-40 px-4">
@@ -147,6 +89,20 @@ export function ProjectGallery() {
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${project.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`}
                   />
+
+                  {/* Edit Button for Owners */}
+                  {isOwner && (
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      className="absolute top-4 right-4 z-20 p-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white/50 hover:text-white transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert(`Sửa dự án: ${project.title}`);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </motion.button>
+                  )}
 
                   <div className="relative z-10 flex-1 flex flex-col">
                     <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">

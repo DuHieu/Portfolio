@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, Briefcase, FolderOpen, Mail, LogOut, User as UserIcon } from 'lucide-react';
+import { Home, Briefcase, FolderOpen, Mail, LogOut, User as UserIcon, Building2, Share2 } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { LoginButton } from './login-button';
 import {
@@ -19,8 +19,19 @@ const navItems = [
   { name: 'Contact', icon: Mail, href: '#contact' },
 ];
 
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+
 export function FloatingNav() {
   const { user, signOut } = useAuth();
+
+  const handleShare = () => {
+    if (!user) return;
+    const prefix = user.email?.split('@')[0];
+    const shareUrl = `${window.location.origin}${window.location.pathname}?user=${prefix}`;
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => alert('Đã copy link cá nhân vào bộ nhớ đệm!'))
+      .catch(err => console.error('Share error:', err));
+  };
 
   return (
     <motion.nav
@@ -80,13 +91,33 @@ export function FloatingNav() {
                 <DropdownMenuContent className="w-56 bg-[#0A0A0A]/95 border-white/10 text-white backdrop-blur-xl">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
+                  <DropdownMenuItem 
+                    className="focus:bg-white/10 cursor-pointer"
+                    onClick={() => {
+                      const prefix = user.email?.split('@')[0];
+                      window.location.href = `${window.location.origin}${window.location.pathname}?user=${prefix}`;
+                    }}
+                  >
                     <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                    <span>My Portfolio</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="focus:bg-white/10 cursor-pointer"
+                    onClick={() => window.open(`${API_BASE}/admin/`, '_blank')}
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    <span>Dashboard (Django)</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
                     <FolderOpen className="mr-2 h-4 w-4" />
                     <span>My Projects</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="focus:bg-white/10 cursor-pointer"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="mr-2 h-4 w-4" />
+                    <span>Share Profile link</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem 
