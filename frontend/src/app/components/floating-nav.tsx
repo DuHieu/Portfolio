@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Home, Briefcase, FolderOpen, Mail, LogOut, User as UserIcon, Building2, Share2 } from 'lucide-react';
+import { Home, Briefcase, FolderOpen, Mail, LogOut, User as UserIcon, Building2, Share2, Pencil } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
+import { useEdit } from '../context/edit-context';
 import { LoginButton } from './login-button';
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export function FloatingNav() {
   const { user, signOut } = useAuth();
+  const { isEditMode, setEditMode } = useEdit();
 
   const handleShare = () => {
     if (!user) return;
@@ -59,7 +61,6 @@ export function FloatingNav() {
                 <item.icon className="w-5 h-5" />
                 <span className="hidden md:inline-block tracking-tight text-sm font-medium">{item.name}</span>
                 
-                {/* Glow effect on hover */}
                 <motion.div
                   className="absolute -inset-2 bg-gradient-to-r from-[#00D9FF] to-[#A855F7] rounded-full opacity-0 group-hover:opacity-20 blur-xl"
                   initial={false}
@@ -71,7 +72,6 @@ export function FloatingNav() {
 
           <div className="h-6 w-px bg-white/20 mx-2" />
 
-          {/* User Auth Section */}
           <div className="flex items-center">
             {user ? (
               <DropdownMenu>
@@ -80,7 +80,7 @@ export function FloatingNav() {
                     whileHover={{ scale: 1.05 }}
                     className="flex items-center gap-2 outline-none"
                   >
-                    <Avatar className="w-8 h-8 border border-white/20">
+                    <Avatar className="w-8 h-8 border border-white/20 shadow-lg shadow-[#00D9FF]/20">
                       <AvatarImage src={user.user_metadata.avatar_url} />
                       <AvatarFallback className="bg-white/10">
                         <UserIcon className="w-4 h-4 text-white/70" />
@@ -88,7 +88,7 @@ export function FloatingNav() {
                     </Avatar>
                   </motion.button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-[#0A0A0A]/95 border-white/10 text-white backdrop-blur-xl">
+                <DropdownMenuContent className="w-56 bg-[#0A0A0A]/95 border-white/10 text-white backdrop-blur-xl rounded-2xl">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem 
@@ -101,6 +101,17 @@ export function FloatingNav() {
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>My Portfolio</span>
                   </DropdownMenuItem>
+
+                  <DropdownMenuItem 
+                    className="focus:bg-white/10 cursor-pointer"
+                    onClick={() => setEditMode(!isEditMode)}
+                  >
+                    <Pencil className={`mr-2 h-4 w-4 ${isEditMode ? 'text-[#00D9FF]' : ''}`} />
+                    <span className={isEditMode ? "text-[#00D9FF] font-bold" : ""}>
+                      {isEditMode ? "Edit Mode: ON" : "Enable Edit Mode"}
+                    </span>
+                  </DropdownMenuItem>
+
                   <DropdownMenuItem 
                     className="focus:bg-white/10 cursor-pointer"
                     onClick={() => window.open(`${API_BASE}/admin/`, '_blank')}
@@ -108,16 +119,13 @@ export function FloatingNav() {
                     <Building2 className="mr-2 h-4 w-4" />
                     <span>Dashboard (Django)</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
-                    <FolderOpen className="mr-2 h-4 w-4" />
-                    <span>My Projects</span>
-                  </DropdownMenuItem>
+                  
                   <DropdownMenuItem 
                     className="focus:bg-white/10 cursor-pointer"
                     onClick={handleShare}
                   >
                     <Share2 className="mr-2 h-4 w-4" />
-                    <span>Share Profile link</span>
+                    <span>Share Profile Link</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem 
@@ -136,7 +144,6 @@ export function FloatingNav() {
         </div>
       </div>
       
-      {/* Shadow glow background */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#00D9FF]/10 to-[#A855F7]/10 rounded-full blur-2xl -z-10" />
     </motion.nav>
   );

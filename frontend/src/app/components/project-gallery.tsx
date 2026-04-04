@@ -1,26 +1,42 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, Pencil } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
+import { useEdit } from '../context/edit-context';
+import { EditModal } from './edit-modal';
 
 interface Project {
   id: number;
   title: string;
   description: string;
+  image: string;
+  demo_link: string;
+  github_link: string;
   tags: string[];
-  gradient: string;
-  size: string;
-  url: string | null;
-  github_url: string | null;
-  developer_name?: string;
 }
-// ... (fallbackProjects remains same, skip for brevity in target)
+
+const GithubIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+  </svg>
+);
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export function ProjectGallery({ username }: { username: string }) {
   const { user } = useAuth();
+  const { isEditMode, pendingChanges } = useEdit();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
   const isOwner = user?.email?.split('@')[0] === username;
 
   useEffect(() => {
@@ -29,15 +45,12 @@ export function ProjectGallery({ username }: { username: string }) {
       .then((data: Project[]) => {
         if (Array.isArray(data)) setProjects(data);
       })
-      .catch(() => {
-        // keep empty if fetch fails
-      });
+      .catch(() => {});
   }, [username]);
 
   return (
     <section id="projects" className="relative py-32 md:py-40 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Section title */}
+      <div className="max-w-7xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -46,132 +59,143 @@ export function ProjectGallery({ username }: { username: string }) {
           className="text-center mb-24"
         >
           <h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
-            <span className="bg-gradient-to-r from-[#00D9FF] to-[#A855F7] bg-clip-text text-transparent">
-              Featured Projects
+            <span className="bg-gradient-to-r from-[#00D9FF] to-[#A855F7] bg-clip-text text-transparent italic">
+              Galactic Projects
             </span>
           </h2>
           <p className="text-xl text-white/60 tracking-wide">
-            A collection of antigravity creations
+            Stations built in the orbit of innovation
           </p>
         </motion.div>
 
-        {/* Bento grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {projects.map((project, index) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className={`${
-                project.size === 'large' ? 'md:col-span-2' : 'md:col-span-1'
-              }`}
-            >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {projects.map((project, index) => {
+            const displayProject = {
+              ...project,
+              ...(pendingChanges[`project:${project.id}`] || {})
+            };
+
+            const isModified = !!pendingChanges[`project:${project.id}`];
+
+            return (
               <motion.div
-                whileHover={{
-                  y: -20,
-                  rotateX: 5,
-                  transition: { duration: 0.3 },
-                }}
-                animate={{ y: [0, -10, 0] }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: index * 0.3,
-                }}
-                className="relative group preserve-3d h-full"
+                key={project.id}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-50px' }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ y: -15, transition: { duration: 0.3 } }}
+                className="group relative perspective-1000"
               >
-                {/* Glass card */}
-                <div className="relative backdrop-blur-xl bg-white/5 border border-white/20 rounded-3xl p-8 overflow-hidden h-full flex flex-col">
-                  {/* Gradient background on hover */}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br ${project.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`}
-                  />
+                <div className={`relative backdrop-blur-3xl bg-white/5 border rounded-[2rem] overflow-hidden transition-all duration-500 scale-95 group-hover:scale-100 ${
+                  isModified ? 'border-[#00D9FF]/50 shadow-[0_0_30px_rgba(0,217,255,0.2)]' : 'border-white/10 shadow-2xl shadow-black/50'
+                }`}>
+                  <div className="relative aspect-video overflow-hidden">
+                    <img
+                      src={displayProject.image || `https://picsum.photos/seed/${project.id}/800/450`}
+                      alt={displayProject.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent opacity-60" />
+                    
+                    <AnimatePresence>
+                      {isModified && (
+                        <motion.div 
+                          initial={{ x: 100 }}
+                          animate={{ x: 0 }}
+                          className="absolute top-4 left-4 z-20 px-3 py-1 bg-[#00D9FF] text-black text-[10px] font-black uppercase tracking-tighter rounded-full"
+                        >
+                          Unsaved Draft
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                  {/* Edit Button for Owners */}
-                  {isOwner && (
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      className="absolute top-4 right-4 z-20 p-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white/50 hover:text-white transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        alert(`Sửa dự án: ${project.title}`);
-                      }}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </motion.button>
-                  )}
+                    {isOwner && isEditMode && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.1 }}
+                        className="absolute top-4 right-4 z-20 p-3 bg-gradient-to-br from-[#00D9FF] to-[#A855F7] rounded-full text-white shadow-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProject(displayProject);
+                        }}
+                      >
+                        <Pencil className="w-5 h-5" />
+                      </motion.button>
+                    )}
+                  </div>
 
-                  <div className="relative z-10 flex-1 flex flex-col">
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">
-                      {project.title}
-                    </h3>
-                    <p className="text-white/60 mb-6 tracking-wide flex-1">
-                      {project.description}
-                    </p>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {project.tags.map((tag, tagIndex) => (
+                  <div className="p-8">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {displayProject.tags.map((tag: string, ti: number) => (
                         <span
-                          key={tagIndex}
-                          className="px-3 py-1 text-sm backdrop-blur-xl bg-white/10 border border-white/20 rounded-full text-white/80 tracking-wide"
+                          key={ti}
+                          className="px-3 py-1 text-[10px] tracking-widest uppercase bg-white/5 border border-white/10 rounded-full text-white/50"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
 
-                    {/* Links */}
-                    <div className="flex gap-4">
-                      {project.url && (
+                    <h3 className="text-2xl font-bold mb-3 tracking-tight text-white group-hover:text-[#00D9FF] transition-colors">
+                      {displayProject.title}
+                    </h3>
+
+                    <p className="text-white/60 text-sm mb-8 leading-relaxed line-clamp-3">
+                      {displayProject.description}
+                    </p>
+
+                    <div className="flex items-center gap-6">
+                      {displayProject.demo_link && (
                         <motion.a
-                          href={project.url}
+                          href={displayProject.demo_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="flex items-center gap-2 px-4 py-2 backdrop-blur-xl bg-white/10 border border-white/20 rounded-full text-white/80 hover:text-white transition-colors"
+                          whileHover={{ x: 5 }}
+                          className="flex items-center gap-2 text-sm font-bold text-[#00D9FF] hover:text-white transition-colors"
                         >
-                          <ExternalLink className="w-4 h-4" />
-                          <span className="text-sm tracking-wide">View</span>
+                          Live Demo <ExternalLink className="w-4 h-4" />
                         </motion.a>
                       )}
-                      {project.github_url && (
+                      {displayProject.github_link && (
                         <motion.a
-                          href={project.github_url}
+                          href={displayProject.github_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="flex items-center gap-2 px-4 py-2 backdrop-blur-xl bg-white/10 border border-white/20 rounded-full text-white/80 hover:text-white transition-colors"
+                          whileHover={{ x: 5 }}
+                          className="flex items-center gap-2 text-sm font-bold text-white/50 hover:text-white transition-colors"
                         >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.807 1.305 3.492.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
-                          <span className="text-sm tracking-wide">Code</span>
+                          Source <GithubIcon className="w-4 h-4" />
                         </motion.a>
                       )}
                     </div>
                   </div>
 
-                  {/* Decorative corner gradient */}
-                  <div
-                    className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${project.gradient} rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-500`}
-                  />
-                  {/* Border glow on hover */}
-                  <div
-                    className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${project.gradient} opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-500 -z-10`}
-                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#00D9FF]/0 to-[#A855F7]/0 group-hover:from-[#00D9FF]/5 group-hover:to-[#A855F7]/5 transition-all duration-500 pointer-events-none" />
                 </div>
-
-                {/* Shadow */}
-                <div className="absolute inset-0 bg-black/20 rounded-3xl blur-2xl translate-y-6 -z-20" />
               </motion.div>
-            </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
+
+      {editingProject && (
+        <EditModal 
+          isOpen={!!editingProject}
+          onClose={() => setEditingProject(null)}
+          title="Edit Project"
+          type="project"
+          id={editingProject.id.toString()}
+          initialData={{
+            title: editingProject.title,
+            description: editingProject.description,
+            image: editingProject.image,
+            demo_link: editingProject.demo_link,
+            github_link: editingProject.github_link,
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Building2, Calendar, Pencil } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
+import { useEdit } from '../context/edit-context';
+import { EditModal } from './edit-modal';
 
 interface Experience {
   id: number;
@@ -25,7 +27,10 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export function ExperienceSection({ username }: { username: string }) {
   const { user } = useAuth();
+  const { isEditMode, pendingChanges } = useEdit();
   const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [editingExp, setEditingExp] = useState<Experience | null>(null);
+
   const isOwner = user?.email?.split('@')[0] === username;
 
   useEffect(() => {
@@ -34,9 +39,7 @@ export function ExperienceSection({ username }: { username: string }) {
       .then((data: Experience[]) => {
         if (Array.isArray(data)) setExperiences(data);
       })
-      .catch(() => {
-        // keep empty if fetch fails
-      });
+      .catch(() => {});
   }, [username]);
 
   return (
@@ -54,7 +57,6 @@ export function ExperienceSection({ username }: { username: string }) {
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Section title */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -72,15 +74,20 @@ export function ExperienceSection({ username }: { username: string }) {
           </p>
         </motion.div>
 
-        {/* Experience nodes */}
         <div className="relative">
-          {/* Connection line */}
           <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-[#00D9FF]/0 via-[#00D9FF]/50 to-[#A855F7]/0 hidden md:block" />
 
           <div className="space-y-32">
             {experiences.map((exp, index) => {
               const color = COLORS[index % COLORS.length];
               const logo = LOGOS[index % LOGOS.length];
+              
+              // Merge draft changes
+              const displayExp = {
+                ...exp,
+                ...(pendingChanges[`experience:${exp.id}`] || {})
+              };
+
               return (
                 <motion.div
                   key={exp.id}
@@ -92,7 +99,6 @@ export function ExperienceSection({ username }: { username: string }) {
                     index % 2 === 0 ? 'md:mr-auto md:pr-12' : 'md:ml-auto md:pl-12'
                   } md:w-1/2`}
                 >
-                  {/* Node connector dot */}
                   <motion.div
                     initial={{ scale: 0 }}
                     whileInView={{ scale: 1 }}
@@ -105,34 +111,29 @@ export function ExperienceSection({ username }: { username: string }) {
                     <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${color} blur-md animate-pulse`} />
                   </motion.div>
 
-                  {/* Experience card */}
                   <motion.div
                     whileHover={{
                       y: -10,
                       rotateY: index % 2 === 0 ? 5 : -5,
                       transition: { duration: 0.3 },
                     }}
-                    animate={{ y: [0, -15, 0] }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                      delay: index * 0.2,
-                    }}
                     className="relative group preserve-3d"
                   >
-                    {/* Glass card */}
-                    <div className="relative backdrop-blur-xl bg-white/5 border border-white/20 rounded-3xl p-8 overflow-hidden">
+                    <div className={`relative backdrop-blur-xl bg-white/5 border rounded-3xl p-8 overflow-hidden transition-colors ${
+                      pendingChanges[`experience:${exp.id}`] ? 'border-[#00D9FF]/50 shadow-[0_0_20px_rgba(0,217,255,0.2)]' : 'border-white/20'
+                    }`}>
                       <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
 
-                      {/* Edit Button for Owners */}
-                      {isOwner && (
+                      {/* Edit Button */}
+                      {isOwner && isEditMode && (
                         <motion.button
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
                           whileHover={{ scale: 1.1 }}
-                          className="absolute top-4 right-4 z-20 p-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white/50 hover:text-white transition-colors"
+                          className="absolute top-4 right-4 z-20 p-3 bg-gradient-to-br from-[#00D9FF] to-[#A855F7] rounded-full text-white shadow-lg"
                           onClick={(e) => {
                             e.stopPropagation();
-                            alert(`Sửa kinh nghiệm: ${exp.title}`);
+                            setEditingExp(displayExp);
                           }}
                         >
                           <Pencil className="w-4 h-4" />
@@ -145,34 +146,26 @@ export function ExperienceSection({ username }: { username: string }) {
                             {logo}
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">{exp.title}</h3>
+                            <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">
+                              {displayExp.title}
+                              {pendingChanges[`experience:${exp.id}`] && (
+                                <span className="ml-2 text-[10px] uppercase tracking-widest text-[#00D9FF] font-black italic">Unsaved</span>
+                              )}
+                            </h3>
                             <div className="flex items-center gap-2 text-white/60">
                               <Building2 className="w-4 h-4" />
-                              <span className="tracking-wide">{exp.company}</span>
+                              <span className="tracking-wide">{displayExp.company}</span>
                             </div>
                           </div>
                         </div>
 
-                        {exp.description && (
-                          <p className="text-white/60 mb-4 tracking-wide text-sm">{exp.description}</p>
-                        )}
-
-                        {exp.skills && exp.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {exp.skills.map((skill, si) => (
-                              <span
-                                key={si}
-                                className="px-3 py-1 text-xs backdrop-blur-xl bg-white/10 border border-white/20 rounded-full text-white/70"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
+                        {displayExp.description && (
+                          <p className="text-white/60 mb-4 tracking-wide text-sm leading-relaxed">{displayExp.description}</p>
                         )}
 
                         <div className="flex items-center gap-2 text-white/50">
                           <Calendar className="w-4 h-4" />
-                          <span className="tracking-wide">{exp.period}</span>
+                          <span className="tracking-wide">{displayExp.period}</span>
                         </div>
                       </div>
 
@@ -187,6 +180,23 @@ export function ExperienceSection({ username }: { username: string }) {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal for Experience */}
+      {editingExp && (
+        <EditModal 
+          isOpen={!!editingExp}
+          onClose={() => setEditingExp(null)}
+          title="Edit Experience"
+          type="experience"
+          id={editingExp.id.toString()}
+          initialData={{
+            title: editingExp.title,
+            company: editingExp.company,
+            period: editingExp.period,
+            description: editingExp.description,
+          }}
+        />
+      )}
     </section>
   );
 }
