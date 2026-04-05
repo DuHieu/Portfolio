@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, Briefcase, FolderOpen, Mail, LogOut, User as UserIcon, Building2, Share2, Pencil } from 'lucide-react';
+import { Home, Briefcase, FolderOpen, Mail, LogOut, User as UserIcon, Building2, Share2, Pencil, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { useEdit } from '../context/edit-context';
 import { LoginButton } from './login-button';
@@ -22,7 +22,7 @@ const navItems = [
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-export function FloatingNav() {
+export function FloatingNav({ showDashboard, setShowDashboard }: { showDashboard: boolean; setShowDashboard: (v: boolean) => void }) {
   const { user, signOut } = useAuth();
   const { isEditMode, setEditMode } = useEdit();
 
@@ -35,6 +35,9 @@ export function FloatingNav() {
       .catch(err => console.error('Share error:', err));
   };
 
+  const isOwner = user?.email?.split('@')[0] === new URLSearchParams(window.location.search).get('user') || 
+                  (user?.email?.split('@')[0] === 'dudev' && !new URLSearchParams(window.location.search).get('user'));
+
   return (
     <motion.nav
       initial={{ y: -100, opacity: 0 }}
@@ -45,7 +48,7 @@ export function FloatingNav() {
       <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-full px-8 py-3 shadow-2xl">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-6">
-            {navItems.map((item, index) => (
+            {!showDashboard && navItems.map((item, index) => (
               <motion.a
                 key={item.name}
                 href={item.href}
@@ -68,75 +71,111 @@ export function FloatingNav() {
                 />
               </motion.a>
             ))}
+            {showDashboard && (
+              <span className="text-[#00D9FF] font-bold text-sm flex items-center gap-2">
+                <Briefcase className="w-4 h-4" /> Personal Dashboard
+              </span>
+            )}
           </div>
 
           <div className="h-6 w-px bg-white/20 mx-2" />
 
           <div className="flex items-center">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <motion.button 
+              <div className="flex items-center gap-4">
+                {isOwner && (
+                  <motion.button
                     whileHover={{ scale: 1.05 }}
-                    className="flex items-center gap-2 outline-none"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowDashboard(!showDashboard)}
+                    className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-xs font-bold transition-all"
                   >
-                    <Avatar className="w-8 h-8 border border-white/20 shadow-lg shadow-[#00D9FF]/20">
-                      <AvatarImage src={user.user_metadata.avatar_url} />
-                      <AvatarFallback className="bg-white/10">
-                        <UserIcon className="w-4 h-4 text-white/70" />
-                      </AvatarFallback>
-                    </Avatar>
+                    {showDashboard ? (
+                      <>
+                        <ArrowLeft className="w-3 h-3 text-[#00D9FF]" />
+                        Back to Portfolio
+                      </>
+                    ) : (
+                      <>
+                        <Briefcase className="w-3 h-3 text-[#00D9FF]" />
+                        Dashboard
+                      </>
+                    )}
                   </motion.button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-[#0A0A0A]/95 border-white/10 text-white backdrop-blur-xl rounded-2xl">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem 
-                    className="focus:bg-white/10 cursor-pointer"
-                    onClick={() => {
-                      const prefix = user.email?.split('@')[0];
-                      window.location.href = `${window.location.origin}${window.location.pathname}?user=${prefix}`;
-                    }}
-                  >
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>My Portfolio</span>
-                  </DropdownMenuItem>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      className="flex items-center gap-2 outline-none"
+                    >
+                      <Avatar className="w-8 h-8 border border-white/20 shadow-lg shadow-[#00D9FF]/20">
+                        <AvatarImage src={user.user_metadata.avatar_url} />
+                        <AvatarFallback className="bg-white/10">
+                          <UserIcon className="w-4 h-4 text-white/70" />
+                        </AvatarFallback>
+                      </Avatar>
+                    </motion.button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 bg-[#0A0A0A]/95 border-white/10 text-white backdrop-blur-xl rounded-2xl">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem 
+                      className="focus:bg-white/10 cursor-pointer"
+                      onClick={() => {
+                        setShowDashboard(false);
+                        const prefix = user.email?.split('@')[0];
+                        window.location.href = `${window.location.origin}${window.location.pathname}?user=${prefix}`;
+                      }}
+                    >
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      <span>My Portfolio</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="focus:bg-white/10 cursor-pointer"
+                      onClick={() => setShowDashboard(true)}
+                    >
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      <span>Dashboard View</span>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem 
-                    className="focus:bg-white/10 cursor-pointer"
-                    onClick={() => setEditMode(!isEditMode)}
-                  >
-                    <Pencil className={`mr-2 h-4 w-4 ${isEditMode ? 'text-[#00D9FF]' : ''}`} />
-                    <span className={isEditMode ? "text-[#00D9FF] font-bold" : ""}>
-                      {isEditMode ? "Edit Mode: ON" : "Enable Edit Mode"}
-                    </span>
-                  </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="focus:bg-white/10 cursor-pointer"
+                      onClick={() => setEditMode(!isEditMode)}
+                    >
+                      <Pencil className={`mr-2 h-4 w-4 ${isEditMode ? 'text-[#00D9FF]' : ''}`} />
+                      <span className={isEditMode ? "text-[#00D9FF] font-bold" : ""}>
+                        {isEditMode ? "Edit Mode: ON" : "Enable Edit Mode"}
+                      </span>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem 
-                    className="focus:bg-white/10 cursor-pointer"
-                    onClick={() => window.open(`${API_BASE}/admin/`, '_blank')}
-                  >
-                    <Building2 className="mr-2 h-4 w-4" />
-                    <span>Dashboard (Django)</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem 
-                    className="focus:bg-white/10 cursor-pointer"
-                    onClick={handleShare}
-                  >
-                    <Share2 className="mr-2 h-4 w-4" />
-                    <span>Share Profile Link</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem 
-                    onClick={() => signOut()}
-                    className="focus:bg-red-500/20 text-red-400 cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuItem 
+                      className="focus:bg-white/10 cursor-pointer"
+                      onClick={() => window.open(`${API_BASE}/admin/`, '_blank')}
+                    >
+                      <Building2 className="mr-2 h-4 w-4" />
+                      <span>Dashboard (Django)</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="focus:bg-white/10 cursor-pointer"
+                      onClick={handleShare}
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      <span>Share Profile Link</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem 
+                      onClick={() => signOut()}
+                      className="focus:bg-red-500/20 text-red-400 cursor-pointer"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : (
               <LoginButton />
             )}

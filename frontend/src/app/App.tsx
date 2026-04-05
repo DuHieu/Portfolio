@@ -8,6 +8,7 @@ import { InteractiveParticles } from './components/interactive-particles';
 import { ParticleModeIndicator } from './components/particle-mode-indicator';
 import { EditProvider } from './context/edit-context';
 import { PublishBar } from './components/publish-bar';
+import { DashboardSection } from './components/dashboard-section';
 import { Toaster } from 'sonner';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -15,6 +16,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 export default function App() {
   const queryParams = new URLSearchParams(window.location.search);
   const [activeUser, setActiveUser] = useState(queryParams.get('user') || 'dudev');
+  const [showDashboard, setShowDashboard] = useState(false);
 
   useEffect(() => {
     if (activeUser !== 'dudev') {
@@ -54,7 +56,7 @@ export default function App() {
         <Toaster position="top-right" richColors />
         <InteractiveParticles />
         <ParticleModeIndicator />
-        <FloatingNav />
+        <FloatingNav showDashboard={showDashboard} setShowDashboard={setShowDashboard} />
 
         <div className="fixed inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A] via-[#0A0A0A]/95 to-[#0A0A0A]" />
@@ -62,10 +64,16 @@ export default function App() {
         </div>
 
         <main className="relative z-10">
-          <HeroSection username={activeUser} />
-          <ExperienceSection username={activeUser} />
-          <ProjectGallery username={activeUser} />
-          <ContactSection username={activeUser} />
+          {showDashboard ? (
+            <DashboardSection username={activeUser} />
+          ) : (
+            <>
+              <HeroSection username={activeUser} />
+              <ExperienceSection username={activeUser} />
+              <ProjectGallery username={activeUser} />
+              <ContactSection username={activeUser} />
+            </>
+          )}
         </main>
 
         <footer className="relative z-10 py-12 px-4 border-t border-white/10">

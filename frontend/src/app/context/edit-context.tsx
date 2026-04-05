@@ -6,9 +6,10 @@ interface EditContextType {
   setEditMode: (mode: boolean) => void;
   pendingChanges: Record<string, any>;
   updateDraft: (id: string, data: any) => void;
-  publishChanges: () => Promise<void>;
-  discardChanges: () => void;
+  publishAll: () => Promise<void>;
+  discardAll: () => void;
   hasChanges: boolean;
+  isPublishing: boolean;
 }
 
 const EditContext = createContext<EditContextType | undefined>(undefined);
@@ -19,6 +20,7 @@ export function EditProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const [isEditMode, setEditMode] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Record<string, any>>({});
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const updateDraft = (id: string, data: any) => {
     setPendingChanges(prev => ({
@@ -27,12 +29,12 @@ export function EditProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const discardChanges = () => {
+  const discardAll = () => {
     setPendingChanges({});
     setEditMode(false);
   };
 
-  const publishChanges = async () => {
+  const publishAll = async () => {
     if (!session?.access_token) {
       alert("Bạn cần đăng nhập để thực hiện tác vụ này.");
       return;
@@ -41,6 +43,7 @@ export function EditProvider({ children }: { children: ReactNode }) {
     const changeKeys = Object.keys(pendingChanges);
     if (changeKeys.length === 0) return;
 
+    setIsPublishing(true);
     try {
       const promises = changeKeys.map(key => {
         const [type, id] = key.split(':');
@@ -82,6 +85,8 @@ export function EditProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Publish error:', error);
       alert("Lỗi khi lưu dữ liệu. Vui lòng thử lại.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -93,9 +98,10 @@ export function EditProvider({ children }: { children: ReactNode }) {
       setEditMode, 
       pendingChanges, 
       updateDraft, 
-      publishChanges, 
-      discardChanges,
-      hasChanges
+      publishAll, 
+      discardAll,
+      hasChanges,
+      isPublishing
     }}>
       {children}
     </EditContext.Provider>
