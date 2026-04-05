@@ -53,9 +53,33 @@ export function EditProvider({ children }: { children: ReactNode }) {
         if (type === 'profile') {
           url = `${API_BASE}/api/profile/update/`;
         } else if (type === 'project') {
-          url = `${API_BASE}/api/projects/${id}/`;
+          if (id.startsWith('new-')) {
+            method = 'POST';
+            url = `${API_BASE}/api/projects/`;
+          } else {
+            url = `${API_BASE}/api/projects/${id}/`;
+          }
         } else if (type === 'experience') {
-          url = `${API_BASE}/api/experiences/${id}/`;
+          if (id.startsWith('new-')) {
+            method = 'POST';
+            url = `${API_BASE}/api/experiences/`;
+          } else {
+            url = `${API_BASE}/api/experiences/${id}/`;
+          }
+        } else if (type === 'education') {
+          if (id.startsWith('new-')) {
+            method = 'POST';
+            url = `${API_BASE}/api/education/`;
+          } else {
+            url = `${API_BASE}/api/education/${id}/`;
+          }
+        } else if (type === 'skill') {
+          if (id.startsWith('new-')) {
+            method = 'POST';
+            url = `${API_BASE}/api/skills/`;
+          } else {
+            url = `${API_BASE}/api/skills/${id}/`;
+          }
         }
 
         return fetch(url, {

@@ -1,9 +1,6 @@
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Pencil } from 'lucide-react';
-import { useAuth } from '../context/auth-context';
-import { useEdit } from '../context/edit-context';
-import { EditModal } from './edit-modal';
+import { Sparkles } from 'lucide-react';
 
 interface DeveloperProfile {
   username: string;
@@ -17,23 +14,11 @@ interface DeveloperProfile {
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export function HeroSection({ username }: { username: string }) {
-  const { user } = useAuth();
-  const { isEditMode, pendingChanges } = useEdit();
   const [profile, setProfile] = useState<DeveloperProfile | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-
-  // Check if current profile belongs to the logged-in user
-  const isOwner = user?.email?.split('@')[0] === username;
-
-  // Merge pending changes for real-time preview
-  const displayProfile = {
-    ...profile,
-    ...(pendingChanges['profile:current'] || {})
-  };
 
   useEffect(() => {
     fetch(`${API_BASE}/api/profile/${username}/`)
@@ -61,35 +46,6 @@ export function HeroSection({ username }: { username: string }) {
       ref={containerRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Edit Trigger */}
-      {isOwner && isEditMode && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.1 }}
-          className="absolute top-32 right-10 z-50 p-4 bg-gradient-to-br from-[#00D9FF] to-[#A855F7] rounded-full text-white shadow-lg shadow-[#00D9FF]/20"
-          onClick={() => setIsModalOpen(true)}
-        >
-          <Pencil className="w-6 h-6" />
-        </motion.button>
-      )}
-
-      {/* Edit Modal */}
-      {profile && (
-        <EditModal 
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title="Edit Profile"
-          type="profile"
-          id="current"
-          initialData={{
-            full_name: profile.full_name,
-            bio: profile.bio,
-            avatar_url: profile.avatar_url,
-          }}
-        />
-      )}
-
       <div className="absolute inset-0">
         {[...Array(30)].map((_, i) => (
           <motion.div
@@ -140,7 +96,7 @@ export function HeroSection({ username }: { username: string }) {
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
         >
           <h1 className="text-[12rem] md:text-[15rem] font-extrabold tracking-tighter text-white select-none uppercase">
-            {displayProfile.username || username}
+            {profile?.username || username}
           </h1>
         </motion.div>
 
@@ -157,9 +113,9 @@ export function HeroSection({ username }: { username: string }) {
               animate={{ rotateY: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
             >
-              {displayProfile.avatar_url ? (
+              {profile?.avatar_url ? (
                 <div className="absolute inset-0 rounded-3xl overflow-hidden border-2 border-white/30">
-                  <img src={displayProfile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
               ) : (
                 <>
@@ -183,11 +139,11 @@ export function HeroSection({ username }: { username: string }) {
         >
           <h2 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight">
             <span className="bg-gradient-to-r from-[#00D9FF] to-[#A855F7] bg-clip-text text-transparent">
-              {displayProfile.full_name || 'Creative Developer'}
+              {profile?.full_name || 'Creative Developer'}
             </span>
           </h2>
           <p className="text-xl md:text-2xl text-white/60 tracking-wide max-w-2xl mx-auto">
-            {displayProfile.bio || 'Crafting immersive digital experiences that defy gravity'}
+            {profile?.bio || 'Crafting immersive digital experiences that defy gravity'}
           </p>
         </motion.div>
 

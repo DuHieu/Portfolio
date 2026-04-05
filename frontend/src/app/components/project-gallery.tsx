@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, Pencil } from 'lucide-react';
-import { useAuth } from '../context/auth-context';
-import { useEdit } from '../context/edit-context';
-import { EditModal } from './edit-modal';
+import { motion } from 'framer-motion';
+import { ExternalLink } from 'lucide-react';
 
 interface Project {
   id: number;
@@ -32,12 +29,7 @@ const GithubIcon = ({ className }: { className?: string }) => (
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export function ProjectGallery({ username }: { username: string }) {
-  const { user } = useAuth();
-  const { isEditMode, pendingChanges } = useEdit();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-
-  const isOwner = user?.email?.split('@')[0] === username;
 
   useEffect(() => {
     fetch(`${API_BASE}/api/projects/?user=${username}`)
@@ -70,13 +62,6 @@ export function ProjectGallery({ username }: { username: string }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {projects.map((project, index) => {
-            const displayProject = {
-              ...project,
-              ...(pendingChanges[`project:${project.id}`] || {})
-            };
-
-            const isModified = !!pendingChanges[`project:${project.id}`];
-
             return (
               <motion.div
                 key={project.id}
@@ -87,48 +72,19 @@ export function ProjectGallery({ username }: { username: string }) {
                 whileHover={{ y: -15, transition: { duration: 0.3 } }}
                 className="group relative perspective-1000"
               >
-                <div className={`relative backdrop-blur-3xl bg-white/5 border rounded-[2rem] overflow-hidden transition-all duration-500 scale-95 group-hover:scale-100 ${
-                  isModified ? 'border-[#00D9FF]/50 shadow-[0_0_30px_rgba(0,217,255,0.2)]' : 'border-white/10 shadow-2xl shadow-black/50'
-                }`}>
+                <div className={`relative backdrop-blur-3xl bg-white/5 border rounded-[2rem] overflow-hidden transition-all duration-500 scale-95 group-hover:scale-100 border-white/10 shadow-2xl shadow-black/50`}>
                   <div className="relative aspect-video overflow-hidden">
                     <img
-                      src={displayProject.image || `https://picsum.photos/seed/${project.id}/800/450`}
-                      alt={displayProject.title}
+                      src={project.image || `https://picsum.photos/seed/${project.id}/800/450`}
+                      alt={project.title}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent opacity-60" />
-                    
-                    <AnimatePresence>
-                      {isModified && (
-                        <motion.div 
-                          initial={{ x: 100 }}
-                          animate={{ x: 0 }}
-                          className="absolute top-4 left-4 z-20 px-3 py-1 bg-[#00D9FF] text-black text-[10px] font-black uppercase tracking-tighter rounded-full"
-                        >
-                          Unsaved Draft
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {isOwner && isEditMode && (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        whileHover={{ scale: 1.1 }}
-                        className="absolute top-4 right-4 z-20 p-3 bg-gradient-to-br from-[#00D9FF] to-[#A855F7] rounded-full text-white shadow-xl"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingProject(displayProject);
-                        }}
-                      >
-                        <Pencil className="w-5 h-5" />
-                      </motion.button>
-                    )}
                   </div>
 
                   <div className="p-8">
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {displayProject.tags.map((tag: string, ti: number) => (
+                      {project.tags.map((tag: string, ti: number) => (
                         <span
                           key={ti}
                           className="px-3 py-1 text-[10px] tracking-widest uppercase bg-white/5 border border-white/10 rounded-full text-white/50"
@@ -139,17 +95,17 @@ export function ProjectGallery({ username }: { username: string }) {
                     </div>
 
                     <h3 className="text-2xl font-bold mb-3 tracking-tight text-white group-hover:text-[#00D9FF] transition-colors">
-                      {displayProject.title}
+                      {project.title}
                     </h3>
 
                     <p className="text-white/60 text-sm mb-8 leading-relaxed line-clamp-3">
-                      {displayProject.description}
+                      {project.description}
                     </p>
 
                     <div className="flex items-center gap-6">
-                      {displayProject.demo_link && (
+                      {project.demo_link && (
                         <motion.a
-                          href={displayProject.demo_link}
+                          href={project.demo_link}
                           target="_blank"
                           rel="noopener noreferrer"
                           whileHover={{ x: 5 }}
@@ -158,9 +114,9 @@ export function ProjectGallery({ username }: { username: string }) {
                           Live Demo <ExternalLink className="w-4 h-4" />
                         </motion.a>
                       )}
-                      {displayProject.github_link && (
+                      {project.github_link && (
                         <motion.a
-                          href={displayProject.github_link}
+                          href={project.github_link}
                           target="_blank"
                           rel="noopener noreferrer"
                           whileHover={{ x: 5 }}
@@ -180,22 +136,6 @@ export function ProjectGallery({ username }: { username: string }) {
         </div>
       </div>
 
-      {editingProject && (
-        <EditModal 
-          isOpen={!!editingProject}
-          onClose={() => setEditingProject(null)}
-          title="Edit Project"
-          type="project"
-          id={editingProject.id.toString()}
-          initialData={{
-            title: editingProject.title,
-            description: editingProject.description,
-            image: editingProject.image,
-            demo_link: editingProject.demo_link,
-            github_link: editingProject.github_link,
-          }}
-        />
-      )}
     </section>
   );
 }

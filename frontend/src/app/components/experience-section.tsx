@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Calendar, Pencil } from 'lucide-react';
-import { useAuth } from '../context/auth-context';
-import { useEdit } from '../context/edit-context';
-import { EditModal } from './edit-modal';
+import { Building2, Calendar } from 'lucide-react';
 
 interface Experience {
   id: number;
@@ -26,12 +23,7 @@ const LOGOS = ['🚀', '🎨', '💡', '✨', '🌟', '⚡'];
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 export function ExperienceSection({ username }: { username: string }) {
-  const { user } = useAuth();
-  const { isEditMode, pendingChanges } = useEdit();
   const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [editingExp, setEditingExp] = useState<Experience | null>(null);
-
-  const isOwner = user?.email?.split('@')[0] === username;
 
   useEffect(() => {
     fetch(`${API_BASE}/api/experiences/?user=${username}`)
@@ -81,12 +73,6 @@ export function ExperienceSection({ username }: { username: string }) {
             {experiences.map((exp, index) => {
               const color = COLORS[index % COLORS.length];
               const logo = LOGOS[index % LOGOS.length];
-              
-              // Merge draft changes
-              const displayExp = {
-                ...exp,
-                ...(pendingChanges[`experience:${exp.id}`] || {})
-              };
 
               return (
                 <motion.div
@@ -119,26 +105,8 @@ export function ExperienceSection({ username }: { username: string }) {
                     }}
                     className="relative group preserve-3d"
                   >
-                    <div className={`relative backdrop-blur-xl bg-white/5 border rounded-3xl p-8 overflow-hidden transition-colors ${
-                      pendingChanges[`experience:${exp.id}`] ? 'border-[#00D9FF]/50 shadow-[0_0_20px_rgba(0,217,255,0.2)]' : 'border-white/20'
-                    }`}>
+                    <div className={`relative backdrop-blur-xl bg-white/5 border rounded-3xl p-8 overflow-hidden transition-colors border-white/20`}>
                       <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-
-                      {/* Edit Button */}
-                      {isOwner && isEditMode && (
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          whileHover={{ scale: 1.1 }}
-                          className="absolute top-4 right-4 z-20 p-3 bg-gradient-to-br from-[#00D9FF] to-[#A855F7] rounded-full text-white shadow-lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingExp(displayExp);
-                          }}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </motion.button>
-                      )}
 
                       <div className="relative z-10">
                         <div className="flex items-start gap-4 mb-6">
@@ -147,25 +115,22 @@ export function ExperienceSection({ username }: { username: string }) {
                           </div>
                           <div className="flex-1">
                             <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">
-                              {displayExp.title}
-                              {pendingChanges[`experience:${exp.id}`] && (
-                                <span className="ml-2 text-[10px] uppercase tracking-widest text-[#00D9FF] font-black italic">Unsaved</span>
-                              )}
+                              {exp.title}
                             </h3>
                             <div className="flex items-center gap-2 text-white/60">
                               <Building2 className="w-4 h-4" />
-                              <span className="tracking-wide">{displayExp.company}</span>
+                              <span className="tracking-wide">{exp.company}</span>
                             </div>
                           </div>
                         </div>
 
-                        {displayExp.description && (
-                          <p className="text-white/60 mb-4 tracking-wide text-sm leading-relaxed">{displayExp.description}</p>
+                        {exp.description && (
+                          <p className="text-white/60 mb-4 tracking-wide text-sm leading-relaxed">{exp.description}</p>
                         )}
 
                         <div className="flex items-center gap-2 text-white/50">
                           <Calendar className="w-4 h-4" />
-                          <span className="tracking-wide">{displayExp.period}</span>
+                          <span className="tracking-wide">{exp.period}</span>
                         </div>
                       </div>
 
@@ -181,22 +146,6 @@ export function ExperienceSection({ username }: { username: string }) {
         </div>
       </div>
 
-      {/* Edit Modal for Experience */}
-      {editingExp && (
-        <EditModal 
-          isOpen={!!editingExp}
-          onClose={() => setEditingExp(null)}
-          title="Edit Experience"
-          type="experience"
-          id={editingExp.id.toString()}
-          initialData={{
-            title: editingExp.title,
-            company: editingExp.company,
-            period: editingExp.period,
-            description: editingExp.description,
-          }}
-        />
-      )}
     </section>
   );
 }

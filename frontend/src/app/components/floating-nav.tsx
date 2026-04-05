@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
-import { Home, Briefcase, FolderOpen, Mail, LogOut, User as UserIcon, Building2, Share2, Pencil, ArrowLeft } from 'lucide-react';
+import { Home, Briefcase, FolderOpen, ArrowLeft, LogOut, User as UserIcon, Share2 } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
-import { useEdit } from '../context/edit-context';
 import { LoginButton } from './login-button';
 import {
   DropdownMenu,
@@ -17,14 +16,12 @@ const navItems = [
   { name: 'Home', icon: Home, href: '#home' },
   { name: 'Experience', icon: Briefcase, href: '#experience' },
   { name: 'Projects', icon: FolderOpen, href: '#projects' },
-  { name: 'Contact', icon: Mail, href: '#contact' },
 ];
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-export function FloatingNav({ showDashboard, setShowDashboard }: { showDashboard: boolean; setShowDashboard: (v: boolean) => void }) {
+
+export function FloatingNav({ showDashboard, setShowDashboard, activeUser }: { showDashboard: boolean; setShowDashboard: (v: boolean) => void; activeUser: string }) {
   const { user, signOut } = useAuth();
-  const { isEditMode, setEditMode } = useEdit();
 
   const handleShare = () => {
     if (!user) return;
@@ -35,8 +32,7 @@ export function FloatingNav({ showDashboard, setShowDashboard }: { showDashboard
       .catch(err => console.error('Share error:', err));
   };
 
-  const isOwner = user?.email?.split('@')[0] === new URLSearchParams(window.location.search).get('user') || 
-                  (user?.email?.split('@')[0] === 'dudev' && !new URLSearchParams(window.location.search).get('user'));
+  const isOwner = user?.email?.split('@')[0] === activeUser;
 
   return (
     <motion.nav
@@ -78,7 +74,8 @@ export function FloatingNav({ showDashboard, setShowDashboard }: { showDashboard
             )}
           </div>
 
-          <div className="h-6 w-px bg-white/20 mx-2" />
+
+          <div className="h-6 w-px bg-white/20 mx-1" />
 
           <div className="flex items-center">
             {user ? (
@@ -140,23 +137,9 @@ export function FloatingNav({ showDashboard, setShowDashboard }: { showDashboard
                       <span>Dashboard View</span>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem 
-                      className="focus:bg-white/10 cursor-pointer"
-                      onClick={() => setEditMode(!isEditMode)}
-                    >
-                      <Pencil className={`mr-2 h-4 w-4 ${isEditMode ? 'text-[#00D9FF]' : ''}`} />
-                      <span className={isEditMode ? "text-[#00D9FF] font-bold" : ""}>
-                        {isEditMode ? "Edit Mode: ON" : "Enable Edit Mode"}
-                      </span>
-                    </DropdownMenuItem>
 
-                    <DropdownMenuItem 
-                      className="focus:bg-white/10 cursor-pointer"
-                      onClick={() => window.open(`${API_BASE}/admin/`, '_blank')}
-                    >
-                      <Building2 className="mr-2 h-4 w-4" />
-                      <span>Dashboard (Django)</span>
-                    </DropdownMenuItem>
+
+
                     
                     <DropdownMenuItem 
                       className="focus:bg-white/10 cursor-pointer"

@@ -4,8 +4,13 @@ import json
 import urllib.request
 import os
 from rest_framework.response import Response
-from .models import Project, Experience, ContactMessage, Developer
-from .serializers import ProjectSerializer, ExperienceSerializer, ContactMessageSerializer, DeveloperSerializer
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from .models import Project, Experience, ContactMessage, Developer, Education, Skill
+from .serializers import (
+    ProjectSerializer, ExperienceSerializer,
+    ContactMessageSerializer, DeveloperSerializer, EducationSerializer, SkillSerializer
+)
 from .permissions import IsOwnerOrReadOnly
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -20,7 +25,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        # Tự động gán dự án cho User đang đăng nhập
         serializer.save(developer=self.request.user)
 
 class ExperienceViewSet(viewsets.ModelViewSet):
@@ -35,8 +39,36 @@ class ExperienceViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        # Tự động gán kinh nghiệm cho User đang đăng nhập
         serializer.save(developer=self.request.user)
+
+class EducationViewSet(viewsets.ModelViewSet):
+    serializer_class = EducationSerializer
+    permission_classes = [IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        queryset = Education.objects.all()
+        username = self.request.query_params.get('user')
+        if username:
+            queryset = queryset.filter(developer__developer_profile__username=username)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(developer=self.request.user)
+class SkillViewSet(viewsets.ModelViewSet):
+    serializer_class = SkillSerializer
+    permission_classes = [IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        queryset = Skill.objects.all()
+        username = self.request.query_params.get('user')
+        if username:
+            queryset = queryset.filter(developer__developer_profile__username=username)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(developer=self.request.user)
+
+
 
 @api_view(['GET'])
 def developer_profile(request, username):
@@ -48,7 +80,6 @@ def developer_profile(request, username):
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['PATCH'])
-# Cần viết thêm Permission Class để check đúng chủ sở hữu ở bước sau
 def update_profile(request):
     if not request.user.is_authenticated:
         return Response({'detail': 'Auth required.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -124,3 +155,115 @@ def refine_text_with_ai(request):
             return Response({'refined_text': refined_text})
     except Exception as e:
         return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CVImportView(APIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({'detail': 'Auth required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        groq_api_key = os.environ.get('GROQ_API_KEY')
+        if not groq_api_key:
+            return Response({'detail': 'GROQ API key not configured.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Extract text: either from uploaded PDF file or from pasted text
+        cv_text = ''
+        uploaded_file = request.FILES.get('file')
+        if uploaded_file:
+            try:
+                import PyPDF2
+                import io
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(uploaded_file.read()))
+                cv_text = '\n'.join(
+                    page.extract_text() or '' for page in pdf_reader.pages
+                ).strip()
+            except Exception as e:
+                return Response({'detail': f'Không thể đọc PDF: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            cv_text = request.data.get('text', '').strip()
+
+        if not cv_text:
+            return Response({'detail': 'Không có nội dung CV. Vui lòng upload file PDF hoặc dán văn bản.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Truncate to avoid token limits (roughly ~12k chars safe)
+        cv_text = cv_text[:12000]
+
+        system_prompt = """You are an expert CV parser. Extract information from the CV text and return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+{
+  "profile": {
+    "full_name": "...",
+    "bio": "A professional summary in 2-3 sentences"
+  },
+  "education": [
+    {
+      "degree": "...",
+      "school": "...",
+      "period": "...",
+      "description": "..."
+    }
+  ],
+  "experiences": [
+    {
+      "title": "Job title",
+      "company": "Company name",
+      "period": "e.g. Jan 2022 - Present",
+      "description": "Key responsibilities and achievements",
+      "skills": ["skill1", "skill2"]
+    }
+  ],
+  "projects": [
+    {
+      "title": "...",
+      "description": "...",
+      "tags": ["tech1", "tech2"]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Skill name e.g. React",
+      "category": "One of: frontend, backend, devops, tools, language, other",
+      "level": 80,
+      "icon": "A relevant emoji e.g. ⚛️"
+    }
+  ]
+}
+Rules:
+- If a section is not found, return an empty array [] or empty string ""
+- categories must be one of: frontend, backend, devops, tools, language, other
+- level should be an integer from 0 to 100 representing proficiency, default to 80
+- skills and tags must be arrays
+- Return ONLY valid JSON, nothing else"""
+
+        payload = json.dumps({
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Parse this CV:\n\n{cv_text}"}
+            ],
+            "temperature": 0.2,
+            "max_tokens": 4096,
+            "response_format": {"type": "json_object"}
+        }).encode('utf-8')
+
+        req = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {groq_api_key}",
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                content = result['choices'][0]['message']['content'].strip()
+                parsed = json.loads(content)
+                return Response(parsed)
+        except json.JSONDecodeError as e:
+            return Response({'detail': f'AI trả về dữ liệu không hợp lệ: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

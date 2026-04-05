@@ -58,6 +58,44 @@ class Experience(models.Model):
     def __str__(self):
         return f"{self.title} at {self.company} (by {self.developer.username if self.developer else 'Unknown'})"
 
+class Education(models.Model):
+    developer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='education', null=True, blank=True)
+    degree = models.CharField(max_length=200)
+    school = models.CharField(max_length=200)
+    period = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.degree} at {self.school} (by {self.developer.username if self.developer else 'Unknown'})"
+
+
+
+class Skill(models.Model):
+    CATEGORY_CHOICES = [
+        ('frontend', 'Frontend'),
+        ('backend', 'Backend'),
+        ('devops', 'DevOps'),
+        ('tools', 'Tools'),
+        ('language', 'Language'),
+        ('other', 'Other'),
+    ]
+    developer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='skills', null=True, blank=True)
+    name = models.CharField(max_length=100)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='other')
+    level = models.IntegerField(default=80, help_text='Skill level from 0 to 100')
+    icon = models.CharField(max_length=10, blank=True, help_text='Emoji icon e.g. ⚛️')
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['category', 'order']
+
+    def __str__(self):
+        return f"{self.name} ({self.category})"
+
 
 class ContactMessage(models.Model):
     # Contact messages can also be routed to a specific dev
