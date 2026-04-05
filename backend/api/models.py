@@ -12,13 +12,22 @@ class Developer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if not self.username and self.user.email:
-            # Tự động tạo username từ email (hieudu@gmail.com -> hieudu)
-            base_username = self.user.email.split('@')[0]
-            # Đảm bảo username là duy nhất
-            if Developer.objects.filter(username=base_username).exists():
-                base_username = f"{base_username}_{self.user.id}"
-            self.username = base_username
+        if not self.username:
+            # Prefer email prefix to match frontend expectation
+            if self.user.email:
+                base_username = self.user.email.split('@')[0]
+            elif self.user.username and self.user.username != 'admin':
+                base_username = self.user.username
+            else:
+                base_username = f"user_{self.user.id}"
+            
+            # Ensure uniqueness
+            username = base_username
+            counter = 1
+            while Developer.objects.filter(username=username).exclude(pk=self.pk).exists():
+                username = f"{base_username}_{counter}"
+                counter += 1
+            self.username = username
         super().save(*args, **kwargs)
 
     def __str__(self):

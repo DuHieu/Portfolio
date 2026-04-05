@@ -237,13 +237,14 @@ Rules:
 - Return ONLY valid JSON, nothing else"""
 
         payload = json.dumps({
-            "model": "llama-3.3-70b-versatile",
+            "model": "qwen/qwen3-32b",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Parse this CV:\n\n{cv_text}"}
             ],
-            "temperature": 0.2,
+            "temperature": 0.6,
             "max_tokens": 4096,
+            "top_p": 0.95,
             "response_format": {"type": "json_object"}
         }).encode('utf-8')
 
