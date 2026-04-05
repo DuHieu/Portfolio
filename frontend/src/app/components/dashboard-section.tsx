@@ -61,7 +61,11 @@ export function DashboardSection({ username }: DashboardSectionProps) {
 
     setIsRefining(true);
     try {
-      const refined = await refineTextWithAI(currentText, type);
+      const sessionStr = localStorage.getItem('sb-yymwzntqoxlajsvvhhps-auth-token');
+      const session = sessionStr ? JSON.parse(sessionStr) : null;
+      const token = session?.access_token;
+      
+      const refined = await refineTextWithAI(currentText, type, token);
       updateDraft(targetId, { [type === 'bio' ? 'bio' : 'description']: refined });
       setAiCallsRemaining(prev => prev - 1);
       
