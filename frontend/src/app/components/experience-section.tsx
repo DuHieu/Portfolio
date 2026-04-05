@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Calendar } from 'lucide-react';
+import { EmptyState } from './empty-state';
 
 interface Experience {
   id: number;
@@ -70,78 +71,86 @@ export function ExperienceSection({ username }: { username: string }) {
           <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-[#00D9FF]/0 via-[#00D9FF]/50 to-[#A855F7]/0 hidden md:block" />
 
           <div className="space-y-32">
-            {experiences.map((exp, index) => {
-              const color = COLORS[index % COLORS.length];
-              const logo = LOGOS[index % LOGOS.length];
+            {experiences.length === 0 ? (
+              <EmptyState 
+                title="No Experience Recorded" 
+                message="Your professional journey is a blank canvas. Add your work history in the dashboard to chart your path."
+                icon="box"
+              />
+            ) : (
+              experiences.map((exp, index) => {
+                const color = COLORS[index % COLORS.length];
+                const logo = LOGOS[index % LOGOS.length];
 
-              return (
-                <motion.div
-                  key={exp.id}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className={`relative ${
-                    index % 2 === 0 ? 'md:mr-auto md:pr-12' : 'md:ml-auto md:pl-12'
-                  } md:w-1/2`}
-                >
+                return (
                   <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: index * 0.1 + 0.3 }}
-                    className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gradient-to-r ${color} hidden md:block ${
-                      index % 2 === 0 ? 'right-0 translate-x-1/2' : 'left-0 -translate-x-1/2'
-                    }`}
+                    key={exp.id}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-100px' }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    className={`relative ${
+                      index % 2 === 0 ? 'md:mr-auto md:pr-12' : 'md:ml-auto md:pl-12'
+                    } md:w-1/2`}
                   >
-                    <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${color} blur-md animate-pulse`} />
-                  </motion.div>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.4, delay: index * 0.1 + 0.3 }}
+                      className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gradient-to-r ${color} hidden md:block ${
+                        index % 2 === 0 ? 'right-0 translate-x-1/2' : 'left-0 -translate-x-1/2'
+                      }`}
+                    >
+                      <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${color} blur-md animate-pulse`} />
+                    </motion.div>
 
-                  <motion.div
-                    whileHover={{
-                      y: -10,
-                      rotateY: index % 2 === 0 ? 5 : -5,
-                      transition: { duration: 0.3 },
-                    }}
-                    className="relative group preserve-3d"
-                  >
-                    <div className={`relative backdrop-blur-xl bg-white/5 border rounded-3xl p-8 overflow-hidden transition-colors border-white/20`}>
-                      <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+                    <motion.div
+                      whileHover={{
+                        y: -10,
+                        rotateY: index % 2 === 0 ? 5 : -5,
+                        transition: { duration: 0.3 },
+                      }}
+                      className="relative group preserve-3d"
+                    >
+                      <div className={`relative backdrop-blur-xl bg-white/5 border rounded-3xl p-8 overflow-hidden transition-colors border-white/20`}>
+                        <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
 
-                      <div className="relative z-10">
-                        <div className="flex items-start gap-4 mb-6">
-                          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center text-3xl shadow-2xl`}>
-                            {logo}
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">
-                              {exp.title}
-                            </h3>
-                            <div className="flex items-center gap-2 text-white/60">
-                              <Building2 className="w-4 h-4" />
-                              <span className="tracking-wide">{exp.company}</span>
+                        <div className="relative z-10">
+                          <div className="flex items-start gap-4 mb-6">
+                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center text-3xl shadow-2xl`}>
+                              {logo}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">
+                                {exp.title}
+                              </h3>
+                              <div className="flex items-center gap-2 text-white/60">
+                                <Building2 className="w-4 h-4" />
+                                <span className="tracking-wide">{exp.company}</span>
+                              </div>
                             </div>
                           </div>
+
+                          {exp.description && (
+                            <p className="text-white/60 mb-4 tracking-wide text-sm leading-relaxed">{exp.description}</p>
+                          )}
+
+                          <div className="flex items-center gap-2 text-white/50">
+                            <Calendar className="w-4 h-4" />
+                            <span className="tracking-wide">{exp.period}</span>
+                          </div>
                         </div>
 
-                        {exp.description && (
-                          <p className="text-white/60 mb-4 tracking-wide text-sm leading-relaxed">{exp.description}</p>
-                        )}
-
-                        <div className="flex items-center gap-2 text-white/50">
-                          <Calendar className="w-4 h-4" />
-                          <span className="tracking-wide">{exp.period}</span>
-                        </div>
+                        <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${color} opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-500 -z-10`} />
                       </div>
 
-                      <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${color} opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-500 -z-10`} />
-                    </div>
-
-                    <div className="absolute inset-0 bg-black/20 rounded-3xl blur-2xl translate-y-4 -z-20" />
+                      <div className="absolute inset-0 bg-black/20 rounded-3xl blur-2xl translate-y-4 -z-20" />
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>

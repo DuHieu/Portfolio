@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, Calendar } from 'lucide-react';
+import { EmptyState } from './empty-state';
 interface Education {
   id: number;
   degree: string;
@@ -54,9 +55,11 @@ export function EducationSection({ username }: { username: string }) {
         </motion.div>
 
         {education.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl backdrop-blur-xl bg-white/5">
-            <p className="text-white/40 italic">No education history available yet.</p>
-          </div>
+          <EmptyState 
+            title="Academic Records Blank" 
+            message="Your educational voyage is just beginning. Port your academic achievements from the dashboard."
+            icon="puzzle"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {education.map((edu, index) => {

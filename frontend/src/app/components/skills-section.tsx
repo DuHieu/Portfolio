@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { EmptyState } from './empty-state';
 interface Skill {
   id: number;
   name: string;
@@ -106,9 +107,11 @@ export function SkillsSection({ username }: { username: string }) {
         </motion.div>
 
         {skills.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl backdrop-blur-xl bg-white/5">
-            <p className="text-white/40 italic">Add your tech stack in the dashboard to populate this galaxy.</p>
-          </div>
+          <EmptyState 
+            title="Tech Stack Empty" 
+            message="Your tech galaxy is currently waiting for stars. Add your skills in the dashboard to populate this section."
+            icon="sparkles"
+          />
         ) : (
           <motion.div
             layout

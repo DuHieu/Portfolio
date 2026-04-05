@@ -4,6 +4,7 @@ import { User, Briefcase, FolderOpen, Plus, Trash2, Sparkles, Loader2, Graduatio
 import { refineTextWithAI } from '../../lib/groq';
 import { useEdit } from '../context/edit-context';
 import { useAuth } from '../context/auth-context';
+import { EmptyState } from './empty-state';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -510,10 +511,16 @@ export function DashboardSection({ username }: DashboardSectionProps) {
             </div>
 
             {education.length === 0 && (
-              <div className="text-center text-white/30 py-16 border border-dashed border-white/10 rounded-3xl">
-                <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p>No education entries yet. Add one or use Magic Import from CV.</p>
-              </div>
+              <EmptyState 
+                title="No Education Record" 
+                message="Your educational voyage is just beginning. Add a degree or use Magic Import to fill this section."
+                icon="puzzle"
+                action={
+                  <Button onClick={handleAddEducation} variant="outline" className="border-white/10 text-white/60 hover:text-white rounded-xl">
+                    Add Education
+                  </Button>
+                }
+              />
             )}
 
             {education.map((edu) => (
@@ -568,6 +575,19 @@ export function DashboardSection({ username }: DashboardSectionProps) {
                 <Plus className="w-4 h-4 mr-2" /> Add New
               </Button>
             </div>
+
+            {experiences.length === 0 && (
+               <EmptyState 
+                title="No Experience" 
+                message="Your professional history is currently a blank canvas. Let's add some stations to your journey."
+                icon="box"
+                action={
+                  <Button onClick={handleAddExperience} variant="outline" className="border-white/10 text-white/60 hover:text-white rounded-xl">
+                    Add Experience
+                  </Button>
+                }
+              />
+            )}
 
             {experiences.map((exp) => (
               <Card key={exp.id} className="bg-white/5 border-white/10 text-white backdrop-blur-xl rounded-3xl overflow-hidden group">
@@ -625,6 +645,18 @@ export function DashboardSection({ username }: DashboardSectionProps) {
             </div>
 
             <div className="grid grid-cols-1 gap-6">
+              {projects.length === 0 && (
+                <EmptyState 
+                  title="No Projects" 
+                  message="Gallery empty! Showcase your best creations here for the universe to see."
+                  icon="ghost"
+                  action={
+                    <Button onClick={handleAddProject} variant="outline" className="border-white/10 text-white/60 hover:text-white rounded-xl">
+                      Create First Project
+                    </Button>
+                  }
+                />
+              )}
               {projects.map((project) => (
                 <Card key={project.id} className="bg-white/5 border-white/10 text-white backdrop-blur-xl rounded-3xl overflow-hidden">
                   <div className="flex flex-col md:flex-row gap-6 p-6">
@@ -675,6 +707,20 @@ export function DashboardSection({ username }: DashboardSectionProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {skills.length === 0 && (
+                <div className="col-span-full">
+                  <EmptyState 
+                    title="Arsenal Empty" 
+                    message="No special abilities detected. Power up by adding your technical skills."
+                    icon="box"
+                    action={
+                      <Button onClick={handleAddSkill} variant="outline" className="border-white/10 text-white/60 hover:text-white rounded-xl">
+                        Add My First Skill
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
               {skills.map((skill) => (
                 <Card key={skill.id} className="bg-white/5 border-white/10 text-white backdrop-blur-xl rounded-3xl overflow-hidden p-6">
                   <div className="space-y-4">
