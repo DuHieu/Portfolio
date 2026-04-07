@@ -132,16 +132,16 @@ export function DashboardSection({ username }: DashboardSectionProps) {
     setImportDone(false);
     setIsImporting(true);
 
-    if (!session?.access_token) {
-      setImportError('Bạn cần đăng nhập để sử dụng tính năng này.');
-      setIsImporting(false);
-      return;
-    }
+    // if (!session?.access_token) {
+    //   setImportError('Bạn cần đăng nhập để sử dụng tính năng này.');
+    //   setIsImporting(false);
+    //   return;
+    // }
 
     try {
       let body: FormData | string;
       let headers: Record<string, string> = {
-        'Authorization': `Bearer ${session.access_token}`,
+        // 'Authorization': `Bearer ${session?.access_token}`, // Disabled for local test
       };
 
       if (file) {

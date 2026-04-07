@@ -19,7 +19,7 @@ export default function App() {
   const { user } = useAuth();
   const queryParams = new URLSearchParams(window.location.search);
   const [activeUser, setActiveUser] = useState(queryParams.get('user') || 'dudev');
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(true); // Forced for local testing
 
   useEffect(() => {
     if (!queryParams.get('user') && user?.email) {
